@@ -158,12 +158,19 @@
     if (Array.isArray(payload.notes)) bits.push(payload.notes.length + " notes");
     if (payload.difficulty) bits.push(String(payload.difficulty).toLowerCase());
     document.getElementById("lick-meta").textContent = bits.join(" · ");
-    // The "Open in LickLearner" button just re-loads the same URL.
-    // On iOS with the app installed, that triggers the Universal
-    // Link → app handoff. On a desktop browser it just stays on
-    // this page, which is fine — the App Store CTA next to it is
-    // the actual escape hatch.
-    document.getElementById("open-in-app").href = location.href;
+    // Make the "Open in LickLearner" button use the custom scheme
+    // (`licklearner://lick/<payload>`) instead of re-pointing at
+    // this same Universal Link. iOS won't re-fire Universal Link
+    // handoff for a same-origin link click — Safari already won
+    // the URL — but the custom scheme bypasses that and pops the
+    // app open via its CFBundleURLSchemes registration. If the
+    // app isn't installed, iOS shows a "Cannot Open Page" alert,
+    // which is still ugly but at least clearly indicates the user
+    // needs to install. The App Store CTA next to it stays as the
+    // proper fallback.
+    var pathMatch = location.pathname.match(/^\/lick\/([A-Za-z0-9_-]+)\/?$/);
+    var b64 = pathMatch ? pathMatch[1] : "";
+    document.getElementById("open-in-app").href = "licklearner://lick/" + b64;
   }
 })();
 </script>
