@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- iOS Smart App Banner. When LickLearner is installed, Safari
+     shows an "Open" pill at the top that triggers the Universal
+     Link → app handoff (which a same-origin <a> click can't). When
+     not installed, the banner shows "View" → App Store. -->
+<meta name="apple-itunes-app" content="app-id=6744544706">
 <title>Open in LickLearner</title>
 <style>
   :root { color-scheme: light dark; }
@@ -112,10 +117,9 @@
     <h1 id="lick-title">Charlie's lick</h1>
     <div id="lick-name" class="lick-name"></div>
     <div id="lick-meta" class="meta"></div>
-    <p>This link opens directly in LickLearner on iPhone or iPad. If you don't have it yet, install the app — then tap the link again.</p>
+    <p>Tap <strong>Open</strong> in the banner above on iPhone / iPad to load this lick into LickLearner. If the banner says <strong>View</strong>, install the app from the App Store first, then re-open this link.</p>
     <div class="actions">
-      <a id="open-in-app" class="badge" href="#">Open in LickLearner</a>
-      <a class="secondary" href="https://apps.apple.com/app/licklearner/id6744544706">Get the app</a>
+      <a class="badge" href="https://apps.apple.com/app/licklearner/id6744544706">Get LickLearner</a>
     </div>
   </div>
 </div>
@@ -158,19 +162,12 @@
     if (Array.isArray(payload.notes)) bits.push(payload.notes.length + " notes");
     if (payload.difficulty) bits.push(String(payload.difficulty).toLowerCase());
     document.getElementById("lick-meta").textContent = bits.join(" · ");
-    // Make the "Open in LickLearner" button use the custom scheme
-    // (`licklearner://lick/<payload>`) instead of re-pointing at
-    // this same Universal Link. iOS won't re-fire Universal Link
-    // handoff for a same-origin link click — Safari already won
-    // the URL — but the custom scheme bypasses that and pops the
-    // app open via its CFBundleURLSchemes registration. If the
-    // app isn't installed, iOS shows a "Cannot Open Page" alert,
-    // which is still ugly but at least clearly indicates the user
-    // needs to install. The App Store CTA next to it stays as the
-    // proper fallback.
-    var pathMatch = location.pathname.match(/^\/lick\/([A-Za-z0-9_-]+)\/?$/);
-    var b64 = pathMatch ? pathMatch[1] : "";
-    document.getElementById("open-in-app").href = "licklearner://lick/" + b64;
+    // No inline "Open in LickLearner" button — Safari can't
+    // re-trigger Universal Link handoff for a same-origin click,
+    // and the custom scheme has been retired. The Smart App Banner
+    // (`<meta name="apple-itunes-app">` in <head>) is the actual
+    // re-entry point: tapping its "Open" button is the one path
+    // iOS reliably routes back into the app.
   }
 })();
 </script>
