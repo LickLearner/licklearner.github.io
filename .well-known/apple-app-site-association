@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["BZ2557F29V.com.licklearnermusic.app"],
+        "components": [
+          {
+            "/": "/lick/*",
+            "comment": "Match LickLearner share links"
+          }
+        ]
+      }
+    ]
+  }
+}
