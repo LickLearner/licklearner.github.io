@@ -32,48 +32,67 @@
     max-width: 460px;
     width: 100%;
     text-align: center;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 18px;
+    padding: 28px 24px;
+    background: rgba(255,255,255,0.5);
+  }
+  @media (prefers-color-scheme: dark) {
+    .card { background: rgba(255,255,255,0.04); }
   }
   .eyebrow {
-    text-transform: uppercase;
-    letter-spacing: 1.4px;
     font-size: 11px;
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    opacity: 0.5;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    opacity: 0.55;
     margin-bottom: 8px;
   }
   h1 {
     font-family: "Fraunces", Georgia, serif;
-    font-size: 34px;
-    letter-spacing: -0.6px;
-    margin: 0 0 6px;
-    line-height: 1.1;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 32px;
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
   }
   .lick-name {
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
-    font-size: 24px;
-    margin: 6px 0 14px;
-    word-break: break-word;
+    font-weight: 500;
+    font-size: 22px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
   }
   .meta {
     display: inline-block;
-    padding: 10px 16px;
-    border-radius: 999px;
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
     font-size: 12px;
-    background: rgba(0,0,0,0.05);
-    margin-bottom: 24px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.04);
+    margin: 4px 0 16px;
+    letter-spacing: 0.2px;
+    opacity: 0.85;
   }
-  p {
-    font-size: 15px;
-    line-height: 1.5;
-    opacity: 0.8;
-    margin: 0 0 20px;
+  .lick-list {
+    text-align: left;
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    opacity: 0.85;
   }
-  .badge {
+  .lick-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    .lick-list li { border-bottom-color: rgba(255,255,255,0.06); }
+  }
+  p { line-height: 1.5; opacity: 0.8; }
+  a.badge {
     display: inline-block;
     padding: 12px 24px;
-    background: #2DA39F;
+    background: #2E7D7A;
     color: white !important;
     text-decoration: none;
     border-radius: 999px;
@@ -111,7 +130,7 @@
     </div>
   </div>
 
-  <!-- Lick share state — populated by the script below if the URL matches /lick/<base64> -->
+  <!-- Single lick state — populated by the script if the URL matches /lick/<base64> -->
   <div id="lick" class="hidden">
     <div class="eyebrow">Shared lick</div>
     <div id="lick-name" class="lick-name"></div>
@@ -119,6 +138,19 @@
     <p>This link opens directly in LickLearner on iPhone or iPad. If you don't have it yet, install the app — then tap the link again.</p>
     <div class="actions">
       <a id="open-in-app" class="badge" href="#">Open in LickLearner</a>
+      <a class="secondary" href="https://apps.apple.com/app/licklearnermusic/app/id6744544706">Get the app</a>
+    </div>
+  </div>
+
+  <!-- Playlist state — populated by the script if the URL matches /playlist/<base64> -->
+  <div id="playlist" class="hidden">
+    <div class="eyebrow">Shared playlist</div>
+    <div id="playlist-name" class="lick-name"></div>
+    <div id="playlist-meta" class="meta"></div>
+    <ul id="playlist-list" class="lick-list"></ul>
+    <p>This link opens directly in LickLearner on iPhone or iPad. If you don't have it yet, install the app — then tap the link again.</p>
+    <div class="actions">
+      <a id="open-playlist" class="badge" href="#">Open in LickLearner</a>
       <a class="secondary" href="https://apps.apple.com/app/licklearner/id6744544706">Get the app</a>
     </div>
   </div>
@@ -136,41 +168,68 @@
     for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
     return bytes;
   }
-  function tryDecodeLick() {
+  function decodePayloadFromPath(prefix) {
     var path = location.pathname;
-    var m = path.match(/^\/lick\/([A-Za-z0-9_-]+)\/?$/);
+    var re = new RegExp("^/" + prefix + "/([A-Za-z0-9_-]+)/?$");
+    var m = path.match(re);
     if (!m) return null;
     try {
       var bytes = b64UrlDecode(m[1]);
       var text = new TextDecoder().decode(bytes);
       var payload = JSON.parse(text);
-      if (!payload || !payload.notes) return null;
-      return payload;
+      return { payload: payload, b64: m[1] };
     } catch (e) {
       return null;
     }
   }
-  var payload = tryDecodeLick();
-  if (payload) {
+
+  // Single-lick path
+  var lick = decodePayloadFromPath("lick");
+  if (lick && lick.payload && lick.payload.notes) {
+    var p = lick.payload;
     document.getElementById("generic").classList.add("hidden");
     document.getElementById("lick").classList.remove("hidden");
     var nameEl = document.getElementById("lick-name");
-    if (payload.name) nameEl.textContent = "“" + payload.name + "”";
+    if (p.name) nameEl.textContent = "“" + p.name + "”";
     var bits = [];
-    if (payload.key) bits.push(payload.key);
-    if (payload.bpm) bits.push(Math.round(payload.bpm) + " BPM");
-    if (Array.isArray(payload.notes)) bits.push(payload.notes.length + " notes");
-    if (payload.difficulty) bits.push(String(payload.difficulty).toLowerCase());
+    if (p.key) bits.push(p.key);
+    if (p.bpm) bits.push(Math.round(p.bpm) + " BPM");
+    if (Array.isArray(p.notes)) bits.push(p.notes.length + " notes");
+    if (p.difficulty) bits.push(String(p.difficulty).toLowerCase());
     document.getElementById("lick-meta").textContent = bits.join(" · ");
-    // "Open in LickLearner" uses the custom scheme. Universal Link
-    // handoff doesn't re-fire for same-origin clicks once Safari
-    // owns the URL, but `licklearner://lick/<payload>` opens the
-    // app directly via its CFBundleURLSchemes registration. If the
-    // app isn't installed iOS shows a "Cannot Open Page" alert,
-    // so the App Store CTA is the proper fallback.
-    var pathMatch = location.pathname.match(/^\/lick\/([A-Za-z0-9_-]+)\/?$/);
-    var b64 = pathMatch ? pathMatch[1] : "";
-    document.getElementById("open-in-app").href = "licklearner://lick/" + b64;
+    document.getElementById("open-in-app").href = "licklearner://lick/" + lick.b64;
+    return;
+  }
+
+  // Playlist path
+  var pl = decodePayloadFromPath("playlist");
+  if (pl && pl.payload && Array.isArray(pl.payload.licks)) {
+    var pp = pl.payload;
+    document.getElementById("generic").classList.add("hidden");
+    document.getElementById("playlist").classList.remove("hidden");
+    var nameEl2 = document.getElementById("playlist-name");
+    nameEl2.textContent = pp.name ? ("“" + pp.name + "”") : "Untitled playlist";
+    var bits2 = [];
+    bits2.push(pp.licks.length + (pp.licks.length === 1 ? " lick" : " licks"));
+    document.getElementById("playlist-meta").textContent = bits2.join(" · ");
+    var listEl = document.getElementById("playlist-list");
+    pp.licks.slice(0, 8).forEach(function (lk) {
+      var li = document.createElement("li");
+      var pieces = [];
+      if (lk.name) pieces.push(lk.name);
+      if (lk.key) pieces.push(lk.key);
+      if (lk.bpm) pieces.push(Math.round(lk.bpm) + " BPM");
+      li.textContent = pieces.join(" · ");
+      listEl.appendChild(li);
+    });
+    if (pp.licks.length > 8) {
+      var more = document.createElement("li");
+      more.textContent = "+ " + (pp.licks.length - 8) + " more";
+      more.style.opacity = "0.6";
+      listEl.appendChild(more);
+    }
+    document.getElementById("open-playlist").href = "licklearner://playlist/" + pl.b64;
+    return;
   }
 })();
 </script>

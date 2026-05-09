@@ -6,7 +6,11 @@
         "components": [
           {
             "/": "/lick/*",
-            "comment": "Match LickLearner share links"
+            "comment": "Match LickLearner single-lick share links"
+          },
+          {
+            "/": "/playlist/*",
+            "comment": "Match LickLearner multi-lick playlist share links"
           }
         ]
       }
