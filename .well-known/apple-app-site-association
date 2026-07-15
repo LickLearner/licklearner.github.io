@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["BZ2557F29V.com.licklearnermusic.app"],
+        "appIDs": ["SSN92BW3WN.com.aaronvinsky.licklearner"],
         "components": [
           {
             "/": "/lick/*",
